@@ -25,12 +25,14 @@ Our mission is to accelerate drug discovery with AI-designed peptides, translati
 - Antimicrobial peptides, cosmetic peptides, and custom functional proteins.
 - AI-enabled structure prediction, peptide sequence generation, protein-protein/protein-ligand docking, and binder design.
 
-## Public Repositories
+## Featured Repositories
 
-Some public repositories in this organization are forks or mirrors of research tools we use, evaluate, or track. Please check each repository for upstream authorship, license, and citation instructions.
+Selected organization repositories include internal AI workflow services and agent tooling. Access may depend on GitHub organization permissions.
 
-- [PepMimic](https://github.com/XDenovo/PepMimic): fork of [kxz18/PepMimic](https://github.com/kxz18/PepMimic), the codebase for the Nature Biomedical Engineering paper [Peptide design through binding interface mimicry with PepMimic](https://www.nature.com/articles/s41551-025-01507-4). PepMimic generates short peptides that mimic binding interfaces from known protein binders.
-- [BindCraft](https://github.com/XDenovo/BindCraft): fork of [martinpacesa/BindCraft](https://github.com/martinpacesa/BindCraft), a binder design pipeline using AlphaFold2 backpropagation, ProteinMPNN, and PyRosetta.
+- [AgnoFlow](https://github.com/XDenovo/AgnoFlow): a local-first, low-code multi-agent orchestration platform built around Agno. It lets users visually compose agents, tools, knowledge, memory, teams, and workflows, then run them locally with bring-your-own-key provider credentials.
+- [bindcraft-mcp](https://github.com/XDenovo/bindcraft-mcp): a FastMCP service for running BindCraft protein binder-design workflows with queued GPU jobs, artifact tracking, and ranked design retrieval.
+- [pepmimic-mcp](https://github.com/XDenovo/pepmimic-mcp): a FastMCP service for PepMimic peptide-candidate generation, scoring, relaxation, and selection workflows.
+- [graphpep-mcp](https://github.com/XDenovo/graphpep-mcp): a FastMCP service for GraphPep protein-peptide complex scoring, including receptor/decoy uploads, queued scoring jobs, and `scores.csv` artifact retrieval.
 
 ## Collaborate
 
