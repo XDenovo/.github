@@ -1,0 +1,24 @@
+name: Chore
+description: Refactor, dependency upgrade, tooling, or other non-behavior-changing work
+title: "[Chore]: "
+labels: ["chore"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What needs to change
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why now
+
+  - type: textarea
+    id: done-when
+    attributes:
+      label: Done when
+      description: The condition that makes this closeable.
+    validations:
+      required: true

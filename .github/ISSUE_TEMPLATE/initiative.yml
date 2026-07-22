@@ -1,0 +1,39 @@
+name: Initiative
+description: Cross-repo effort — file this, then add per-repo specs as sub-issues
+title: "[Initiative]: "
+labels: ["initiative"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What are we achieving across repos, and why.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: repos
+    attributes:
+      label: Repos involved
+      multiple: true
+      options:
+        - website
+        - gateway
+        - mcp-runtime
+        - mcp-service-template
+        - platform-deploy
+        - agent-skills
+    validations:
+      required: true
+
+  - type: textarea
+    id: success-criteria
+    attributes:
+      label: Success criteria
+      description: Measurable, across the whole initiative.
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: "After creating this issue: set its Type to `Initiative`, then add each repo's spec as a sub-issue (works across repos in the XDenovo org)."

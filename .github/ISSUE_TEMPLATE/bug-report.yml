@@ -1,0 +1,38 @@
+name: Bug Report
+description: Something is broken
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Version, OS, deployment target (local / control-plane / gpu-node), etc.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      render: shell

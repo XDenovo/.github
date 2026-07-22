@@ -1,0 +1,59 @@
+name: Feature Spec
+description: Define a new capability or behavior before implementation starts
+title: "[Spec]: "
+labels: ["spec"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What are we building, and why. Plain language.
+    validations:
+      required: true
+
+  - type: textarea
+    id: user-scenario
+    attributes:
+      label: User scenario
+      description: Given/When/Then, or a short user story — what does someone observe before and after this ships?
+
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Functional requirements
+      description: |
+        Numbered, testable, MUST-language. Mark anything you're unsure about instead of guessing:
+        FR-001: System MUST ...
+        FR-002: [NEEDS CLARIFICATION: ...]
+    validations:
+      required: true
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: What's explicitly excluded — prevents scope creep during implementation.
+
+  - type: textarea
+    id: edge-cases
+    attributes:
+      label: Edge cases
+      description: Boundary conditions and error scenarios the implementation must handle.
+
+  - type: textarea
+    id: success-criteria
+    attributes:
+      label: Success criteria
+      description: Measurable, technology-agnostic. This is the Definition of Done — the PR that closes this issue should verify each one.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Links — docs/architecture.md section, related issues, prior art.
+
+  - type: markdown
+    attributes:
+      value: Spans multiple repos? File an Initiative issue instead and link per-repo specs as sub-issues.
