@@ -1,7 +1,6 @@
 name: Feature Spec
 description: Define a new capability or behavior before implementation starts
-title: "[Spec]: "
-labels: ["spec"]
+type: Feature
 body:
   - type: textarea
     id: goal

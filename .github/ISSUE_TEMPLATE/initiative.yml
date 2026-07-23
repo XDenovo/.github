@@ -1,7 +1,6 @@
 name: Initiative
 description: Cross-repo effort — file this, then add per-repo specs as sub-issues
-title: "[Initiative]: "
-labels: ["initiative"]
+type: Initiative
 body:
   - type: textarea
     id: goal

@@ -1,7 +1,6 @@
 name: Chore
 description: Refactor, dependency upgrade, tooling, or other non-behavior-changing work
-title: "[Chore]: "
-labels: ["chore"]
+type: Task
 body:
   - type: textarea
     id: description

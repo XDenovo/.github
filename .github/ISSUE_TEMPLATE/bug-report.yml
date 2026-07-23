@@ -1,7 +1,6 @@
 name: Bug Report
 description: Something is broken
-title: "[Bug]: "
-labels: ["bug"]
+type: Bug
 body:
   - type: textarea
     id: what-happened
