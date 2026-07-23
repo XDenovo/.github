@@ -50,7 +50,7 @@
 
 ## Pull Request Template
 
-- Treat the linked Issue as the implementation specification and the Pull Request as the result report.
+- Treat the linked Issue as the implementation specification and the Pull Request as the default result report. For a permitted direct delivery, the commit plus the Issue completion record is the result report.
 - Ask for the reason for the change, concrete modifications, evidence from checks actually run, acceptance-criteria status, breaking changes, and the closing Issue reference.
 - Do not ask authors to duplicate the full specification or claim checks that were not run.
 - Keep closing-keyword guidance scoped to an Issue in the same repository; a repository PR must not close a parent Platform Initiative.
@@ -96,7 +96,10 @@
 - Update the owning Platform policy document before changing organization-wide Issue semantics, Project workflow, automation identity, merge policy, or release conventions.
 - A template wording or implementation change that follows existing policy may use a self-contained Issue in this repository.
 - Preserve unrelated work, stage only intended paths, and report checks actually run.
-- Follow Conventional Commits. Except for explicit initialization or recovery work, use a Pull Request for organization-wide defaults and automation changes.
+- Follow Conventional Commits.
+- This repository permits direct delivery on `main`: a maintainer may work from a clean local `main` synchronized with `origin/main`, validate the intended changes, stage only explicit paths, commit, and push normally to `origin/main`. Never force-push.
+- A Pull Request is optional. Prefer one when independent review is useful or the change affects workflow permissions, secret flow, automation identity, or another broad organization boundary.
+- When direct delivery completes an Issue, record the commit and checks in the Issue and close it manually after the push.
 
 ## Canonical References
 
