@@ -1,0 +1,383 @@
+# Synchronize Issue and Pull Request delivery state in the XDenovo Platform
+# Project. Callers supply only the Project ID and the GitHub App credentials.
+#
+# This workflow handles trusted metadata only. Never add a checkout, download,
+# build, test, or other execution of pull-request-controlled code.
+
+name: Sync XDenovo Platform project status
+
+on:
+  workflow_call:
+    inputs:
+      project_id:
+        description: Node ID of the XDenovo Platform Project
+        required: true
+        type: string
+      app_client_id:
+        description: Client ID of the xdenovo-project-bot GitHub App
+        required: true
+        type: string
+    secrets:
+      app_private_key:
+        description: Private key of the xdenovo-project-bot GitHub App
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: >-
+    platform-project-status-${{ github.repository_id }}-${{
+    github.event.issue.node_id || github.event.pull_request.node_id ||
+    github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  sync-project-status:
+    name: Sync project status
+    if: github.repository_owner == 'XDenovo'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ inputs.app_client_id }}
+          private-key: ${{ secrets.app_private_key }}
+          owner: ${{ github.repository_owner }}
+          permission-organization-projects: write
+          permission-issues: read
+          permission-pull-requests: read
+
+      - name: Derive and synchronize current state
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PROJECT_ID: ${{ inputs.project_id }}
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const projectId = process.env.PROJECT_ID;
+            const contentId =
+              context.payload.issue?.node_id ??
+              context.payload.pull_request?.node_id;
+
+            if (!projectId) {
+              throw new Error("The project_id input must not be empty.");
+            }
+            if (!contentId) {
+              throw new Error(
+                `Unsupported ${context.eventName} payload: no Issue or Pull Request node ID.`,
+              );
+            }
+
+            const projectData = await github.graphql(
+              `query LoadProject($projectId: ID!) {
+                node(id: $projectId) {
+                  ... on ProjectV2 {
+                    id
+                    field(name: "Status") {
+                      ... on ProjectV2SingleSelectField {
+                        id
+                        options {
+                          id
+                          name
+                        }
+                      }
+                    }
+                  }
+                }
+              }`,
+              { projectId },
+            );
+            const project = projectData.node;
+            const statusField = project?.field;
+            if (!project?.id || !statusField?.id) {
+              throw new Error(
+                "The configured Project or its Status field could not be resolved.",
+              );
+            }
+
+            const statusOptionByName = new Map(
+              statusField.options.map((option) => [option.name, option.id]),
+            );
+            for (const name of [
+              "Todo",
+              "In Progress",
+              "In Review",
+              "Done",
+            ]) {
+              if (!statusOptionByName.has(name)) {
+                throw new Error(
+                  `The configured Project has no Status option named "${name}".`,
+                );
+              }
+            }
+
+            const loadContent = async (id) => {
+              const result = await github.graphql(
+                `query LoadContent($id: ID!) {
+                  node(id: $id) {
+                    __typename
+                    ... on Issue {
+                      id
+                      state
+                      stateReason
+                      assignees(first: 1) {
+                        totalCount
+                      }
+                      projectItems(first: 100, includeArchived: true) {
+                        nodes {
+                          id
+                          isArchived
+                          project {
+                            id
+                          }
+                        }
+                      }
+                      closedByPullRequestsReferences(
+                        first: 100
+                        includeClosedPrs: true
+                      ) {
+                        nodes {
+                          state
+                          isDraft
+                        }
+                      }
+                    }
+                    ... on PullRequest {
+                      id
+                      state
+                      isDraft
+                      merged
+                      projectItems(first: 100, includeArchived: true) {
+                        nodes {
+                          id
+                          isArchived
+                          project {
+                            id
+                          }
+                        }
+                      }
+                      closingIssuesReferences(first: 100) {
+                        nodes {
+                          id
+                        }
+                      }
+                    }
+                  }
+                }`,
+                { id },
+              );
+              if (!result.node?.id) {
+                throw new Error(`Could not resolve GitHub content node ${id}.`);
+              }
+              return result.node;
+            };
+
+            const ensureProjectItem = async (content) => {
+              const existing = content.projectItems.nodes.find(
+                (item) => item.project.id === projectId,
+              );
+              if (existing) {
+                return existing;
+              }
+
+              const result = await github.graphql(
+                `mutation AddProjectItem(
+                  $projectId: ID!
+                  $contentId: ID!
+                ) {
+                  addProjectV2ItemById(
+                    input: {
+                      projectId: $projectId
+                      contentId: $contentId
+                    }
+                  ) {
+                    item {
+                      id
+                      isArchived
+                      project {
+                        id
+                      }
+                    }
+                  }
+                }`,
+                { projectId, contentId: content.id },
+              );
+              return result.addProjectV2ItemById.item;
+            };
+
+            const archiveProjectItem = async (itemId) => {
+              await github.graphql(
+                `mutation ArchiveProjectItem(
+                  $projectId: ID!
+                  $itemId: ID!
+                ) {
+                  archiveProjectV2Item(
+                    input: {
+                      projectId: $projectId
+                      itemId: $itemId
+                    }
+                  ) {
+                    clientMutationId
+                  }
+                }`,
+                { projectId, itemId },
+              );
+            };
+
+            const unarchiveProjectItem = async (itemId) => {
+              await github.graphql(
+                `mutation UnarchiveProjectItem(
+                  $projectId: ID!
+                  $itemId: ID!
+                ) {
+                  unarchiveProjectV2Item(
+                    input: {
+                      projectId: $projectId
+                      itemId: $itemId
+                    }
+                  ) {
+                    clientMutationId
+                  }
+                }`,
+                { projectId, itemId },
+              );
+            };
+
+            const updateProjectItemStatus = async (itemId, status) => {
+              await github.graphql(
+                `mutation UpdateProjectItemStatus(
+                  $projectId: ID!
+                  $itemId: ID!
+                  $fieldId: ID!
+                  $optionId: String!
+                ) {
+                  updateProjectV2ItemFieldValue(
+                    input: {
+                      projectId: $projectId
+                      itemId: $itemId
+                      fieldId: $fieldId
+                      value: {
+                        singleSelectOptionId: $optionId
+                      }
+                    }
+                  ) {
+                    clientMutationId
+                  }
+                }`,
+                {
+                  projectId,
+                  itemId,
+                  fieldId: statusField.id,
+                  optionId: statusOptionByName.get(status),
+                },
+              );
+            };
+
+            const deriveIssueState = (issue) => {
+              if (issue.state === "CLOSED") {
+                return issue.stateReason === "NOT_PLANNED"
+                  ? { archive: true }
+                  : { status: "Done" };
+              }
+
+              const openPullRequests =
+                issue.closedByPullRequestsReferences.nodes.filter(
+                  (pullRequest) => pullRequest.state === "OPEN",
+                );
+              if (
+                openPullRequests.some((pullRequest) => !pullRequest.isDraft)
+              ) {
+                return { status: "In Review" };
+              }
+              if (openPullRequests.length > 0) {
+                return { status: "In Progress" };
+              }
+              return {
+                status:
+                  issue.assignees.totalCount > 0 ? "In Progress" : "Todo",
+              };
+            };
+
+            const derivePullRequestState = (pullRequest) => {
+              if (pullRequest.merged) {
+                return { status: "Done" };
+              }
+              if (pullRequest.state === "CLOSED") {
+                return { archive: true };
+              }
+              return {
+                status: pullRequest.isDraft ? "In Progress" : "In Review",
+              };
+            };
+
+            const applyState = async (content, desired) => {
+              const item = await ensureProjectItem(content);
+              if (desired.archive) {
+                if (!item.isArchived) {
+                  await archiveProjectItem(item.id);
+                }
+                return;
+              }
+
+              if (item.isArchived) {
+                await unarchiveProjectItem(item.id);
+              }
+              await updateProjectItemStatus(item.id, desired.status);
+            };
+
+            const deriveContentState = (content) => {
+              if (content.__typename === "Issue") {
+                return deriveIssueState(content);
+              }
+              if (content.__typename === "PullRequest") {
+                return derivePullRequestState(content);
+              }
+              throw new Error(
+                `Unsupported Project content type ${content.__typename}.`,
+              );
+            };
+
+            const stateKey = (state) =>
+              state.archive ? "archive" : `status:${state.status}`;
+
+            const reconcileContent = async (id, expectedType) => {
+              for (let attempt = 1; attempt <= 3; attempt += 1) {
+                const current = await loadContent(id);
+                if (
+                  expectedType &&
+                  current.__typename !== expectedType
+                ) {
+                  throw new Error(
+                    `Expected ${expectedType} node ${id}, received ${current.__typename}.`,
+                  );
+                }
+
+                const desired = deriveContentState(current);
+                await applyState(current, desired);
+
+                const refreshed = await loadContent(id);
+                if (
+                  stateKey(deriveContentState(refreshed)) ===
+                  stateKey(desired)
+                ) {
+                  return refreshed;
+                }
+
+                if (attempt === 3) {
+                  throw new Error(
+                    `GitHub state for ${current.__typename} ${id} kept changing during reconciliation.`,
+                  );
+                }
+              }
+            };
+
+            const content = await reconcileContent(contentId);
+            if (content.__typename === "PullRequest") {
+              for (const issueReference of content.closingIssuesReferences
+                .nodes) {
+                await reconcileContent(issueReference.id, "Issue");
+              }
+            }
