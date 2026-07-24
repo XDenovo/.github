@@ -1,0 +1,1 @@
+Temporary metadata-only fixture for XDenovo/platform#9 event validation.
